@@ -84,10 +84,10 @@ class LinkedList {
   /*
    * TODO need refactoring
   */
-  _add(value, fromTop) {
+  _add(value, fromHead) {
     if (!this.size) {
       this.head = this.tail = new Node(value);
-    } else if (flag) {
+    } else if (fromHead) {
       const parent = new Node(value, null, this.head);
       this.head.prev = parent;
       this.head = parent;
