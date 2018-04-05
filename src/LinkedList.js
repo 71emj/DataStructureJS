@@ -72,37 +72,31 @@ class LinkedList {
   /*
    * TODO possible to combine it as one method, default to add to queue
   */
-  push(args) {
+  insert(args, flag = false) {
     const it = Array.isArray(args) ? args : arguments;
     for (let i = 0, l = it.length; i < l; i++) {
-      this._add(it[i]);
+      if (this._add(it[i], flag)) {
+        this.size += 1;
+      }
     }
     return true;
   }
-  unshift(value) {
-    const parent = new Node(value, null, this.head);
-    this.head = parent;
-    this.size++;
-    return true;
-  }
-
   /*
-   * TODO need refactoring, too WET and hard to read
+   * TODO need refactoring
   */
-  _add(value) {
+  _add(value, fromTop) {
     if (!this.size) {
-      this.head = new Node(value);
-      return this.size++;
+      this.head = this.tail = new Node(value);
+    } else if (flag) {
+      const parent = new Node(value, null, this.head);
+      this.head.prev = parent;
+      this.head = parent;
+    } else {
+      const child = new Node(value, this.tail);
+      this.tail.next = child;
+      this.tail = child;
     }
-    if (this.size < 2) {
-      this.tail = new Node(value, this.head);
-      this.head.next = this.tail;
-      return this.size++;
-    }
-    const cur = new Node(value, this.tail);
-    this.tail.next = cur;
-    this.tail = cur;
-    return this.size++;
+    return 1;
   }
 
   /*
