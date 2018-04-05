@@ -65,26 +65,96 @@ class LinkedList {
     return true;
   }
 
-  get(index, flag) {
+  insertAt(index, value) {
+    const template = (value, prev = null, next = null) => ({ value, prev, next });
+    const target = this._find(index, 1);
+    if (!target) return false;
+    if (index == 0 || index == this.size - 1) {
+      return index ? this.push(value) : this.unshift(value);
+    }
+
+    const prev = target.prev;
+    const next = target.next;
+    const cur = template(value, prev, next);
+    prev.next = cur;
+    next.prev = cur;
+    this.size++;
+    return true;
+  }
+
+  insertBefore(index, value) {
+    const template = (value, prev = null, next = null) => ({ value, prev, next });
+    const target = this._find(index, 1);
+    if (!target) return false;
+    if (index == 0 || index == this.size - 1) {
+      return index ? this.push(value) : this.unshift(value);
+    }
+    console.log({ target, index });
+    const prev = target.prev;
+    const cur = template(value, prev, target);
+    target.prev = cur;
+    prev.next = cur;
+    this.size++;
+    return true;
+  }
+
+  insertAfter(index, value) {
+    const template = (value, prev = null, next = null) => ({ value, prev, next });
+    const target = this._find(index, 1);
+    if (!target) return false;
+    if (index == 0 || index == this.size - 1) {
+      return index ? this.push(value) : this.unshift(value);
+    }
+    console.log({ target, index });
+    const next = target.next;
+    const cur = template(value, target, next);
+    target.next = cur;
+    next.prev = cur;
+    this.size++;
+    return true;
+  }
+
+  splice(index) {
+    const target = this._find(index, 1);
+    if (!target) return false;
+    if (index == 0 || index == this.size - 1) {
+      return index ? this.pop() : this.shift();
+    }
+    const prev = target.prev;
+    const next = target.next;
+    next.prev = prev;
+    prev.next = next;
+    this.size--;
+    return true;
+  }
+
+  get(index) {
+    return this._find(index);
+  }
+
+  _find(index, flag) {
     if (index < -1 || index > this.size - 1) {
       return undefined;
     }
-    const fromHead = index;
-    const fromTail = this.size - index - 1;
-    console.log({ index, fromHead, fromTail });
-    let i = 0, target;
-    if (fromHead > fromTail || ~~flag) {
+    if (!index || index == this.size - 1) {
+      return index ? this.tail.value : this.head.value;
+    }
+    // starting index 1 -->
+    const fromHead = index; // 1 --> 1 > 2
+    const fromTail = this.size - index - 1; // 18 --<
+    let i = 0, target; //
+    if (fromHead > fromTail) {
       target = this.tail;
       while (i++ < fromTail) {
         target = target.prev;
       }
     } else {
-      target = this.head;
+      target = this.head; // 0
       while (i++ < index) {
         target = target.next;
       }
     }
-    return target.value;
+    return flag ? target : target.value;
   }
 
   toArray() {
@@ -109,7 +179,8 @@ function benchmark(method) {
       if (Array.isArray(collection) && method === "push") {
         return pushToArray(collection, value) && Date.now() - start;
       }
-      return collection[method](value) && Date.now() - start;
+      const args = arguments.length > 1 ? arguments : [ value ];
+      return collection[method](...args) && Date.now() - start;
     }
   }
 }
@@ -125,7 +196,7 @@ function benchmarkRead(index) {
   return collection => {
     const start = Date.now();
     if (collection instanceof LinkedList) {
-      return collection.get(index) && Date.now() - start;
+      return collection._find(index) && Date.now() - start;
     }
     return collection[index] && Date.now() - start;
   }
@@ -147,6 +218,7 @@ const benchPush = benchmark("push");
 const benchPop = benchmark("pop");
 const benchUnshift = benchmark("unshift");
 const benchShift = benchmark("shift");
+const benchSplice = benchmark("splice");
 const benchTransform = benchmark("toArray");
 
 const pushArray = benchPush(array);
@@ -160,5 +232,8 @@ const unshiftList = benchUnshift(linkedList);
 
 const shiftArray = benchShift(array);
 const shiftList = benchShift(linkedList);
+
+const spliceArray = benchSplice(array);
+const spliceList = benchSplice(linkedList);
 
 const toArray = benchTransform(linkedList);
