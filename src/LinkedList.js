@@ -1,4 +1,18 @@
+class Node {
+  constructor(value, prev = null, next = null) {
+    this.value = value;
+    this.prev = prev;
+    this.next = next;
+  }
+  valueOf() {
+    return this.value;
+  }
+}
+
 class LinkedList {
+  /*
+   * TODO consider different approach to encapsulate data
+  */
   constructor() {
     this.size = 0;
     this.push(...arguments);
@@ -16,105 +30,32 @@ class LinkedList {
     return this._tail;
   }
 
-  _add(value, template) {
-    if (!this.size) {
-      this.head = template(value);
-      return this.size++;
-    }
-    if (this.size < 2) {
-      this.tail = template(value, this.head);
-      this.head.next = this.tail;
-      return this.size++;
-    }
-    const cur = template(value, this.tail);
-    this.tail.next = cur;
-    this.tail = cur;
-    return this.size++;
-  }
-
-  push(args) {
-    const template = (value, prev = null, next = null) => ({ value, prev, next });
-    const it = Array.isArray(args) ? args : arguments;
-    for (let i = 0, l = it.length; i < l; i++) {
-      this._add(it[i], template);
-    }
-    return true;
-  }
-
+  /*
+   * TODO need refactoring,
+   * it seems like a little too specific for similar action
+  */
   pop() {
-    const parent = this.tail.prev;
-    parent.next = null;
-    this.tail = parent;
-    this.size--;
-    return true;
+    return this._cull("tail", "prev", "next");
   }
 
   shift() {
-    const children = this.head.next;
-    children.prev = null;
-    this.head = children;
-    this.size--;
-    return true;
+    return this._cull("head", "next", "prev");
   }
-
-  unshift(value) {
-    const template = (value, prev = null, next = null) => ({ value, prev, next });
-    const parent = template(value, null, this.head);
-    this.head = parent;
-    this.size++;
-    return true;
-  }
-
-  insertAt(index, value) {
-    const template = (value, prev = null, next = null) => ({ value, prev, next });
-    const target = this._find(index, 1);
-    if (!target) return false;
-    if (index == 0 || index == this.size - 1) {
-      return index ? this.push(value) : this.unshift(value);
+  _cull(node, dir, opposite) {
+    try {
+      const tar = this[node][dir];
+      tar[opposite] = null;
+      this[node] = tar;
+    } catch (err) {
+      if (!this.size) return false;
+      this.head = null;
+      this.tail = null;
+    } finally {
+      this.size--;
     }
-
-    const prev = target.prev;
-    const next = target.next;
-    const cur = template(value, prev, next);
-    prev.next = cur;
-    next.prev = cur;
-    this.size++;
     return true;
   }
-
-  insertBefore(index, value) {
-    const template = (value, prev = null, next = null) => ({ value, prev, next });
-    const target = this._find(index, 1);
-    if (!target) return false;
-    if (index == 0 || index == this.size - 1) {
-      return index ? this.push(value) : this.unshift(value);
-    }
-    console.log({ target, index });
-    const prev = target.prev;
-    const cur = template(value, prev, target);
-    target.prev = cur;
-    prev.next = cur;
-    this.size++;
-    return true;
-  }
-
-  insertAfter(index, value) {
-    const template = (value, prev = null, next = null) => ({ value, prev, next });
-    const target = this._find(index, 1);
-    if (!target) return false;
-    if (index == 0 || index == this.size - 1) {
-      return index ? this.push(value) : this.unshift(value);
-    }
-    console.log({ target, index });
-    const next = target.next;
-    const cur = template(value, target, next);
-    target.next = cur;
-    next.prev = cur;
-    this.size++;
-    return true;
-  }
-
-  splice(index) {
+  remove(index) {
     const target = this._find(index, 1);
     if (!target) return false;
     if (index == 0 || index == this.size - 1) {
@@ -128,21 +69,117 @@ class LinkedList {
     return true;
   }
 
-  get(index) {
-    return this._find(index);
+  /*
+   * TODO possible to combine it as one method, default to add to queue
+  */
+  push(args) {
+    const it = Array.isArray(args) ? args : arguments;
+    for (let i = 0, l = it.length; i < l; i++) {
+      this._add(it[i]);
+    }
+    return true;
+  }
+  unshift(value) {
+    const parent = new Node(value, null, this.head);
+    this.head = parent;
+    this.size++;
+    return true;
   }
 
-  _find(index, flag) {
+  /*
+   * TODO need refactoring, too WET and hard to read
+  */
+  _add(value) {
+    if (!this.size) {
+      this.head = new Node(value);
+      return this.size++;
+    }
+    if (this.size < 2) {
+      this.tail = new Node(value, this.head);
+      this.head.next = this.tail;
+      return this.size++;
+    }
+    const cur = new Node(value, this.tail);
+    this.tail.next = cur;
+    this.tail = cur;
+    return this.size++;
+  }
+
+  /*
+   * TODO need refactoring
+   * add more semantic meaning to variable names, hard to read
+  */
+  insertAt(index, value) {
+    const target = this._find(index);
+    let prev, next, cur;
+    if (index == 0 || index == this.size - 1) {
+      if (index) {
+        prev = this.tail.prev;
+        cur = new Node(value, prev, next);
+        this.tail = cur;
+      } else {
+        next = this.head.next;
+        cur = new Node(value, prev, next);
+        this.head = cur;
+      }
+      return true;
+    }
+    if (!target) return false;
+    prev = target.prev;
+    next = target.next;
+    cur = new Node(value, prev, next);
+    prev.next = cur;
+    next.prev = cur;
+    return true;
+  }
+
+  /*
+   * TODO the two methods could be combined as one
+  */
+  insertBefore(index, value) {
+    if (!index) {
+      return this.unshift(value);
+    }
+    return this._insert(index, value, "prev", "next");
+  }
+  insertAfter(index, value) {
+    if (index == this.size - 1) {
+      return this.push(value);
+    }
+    return this._insert(index, value, "next", "prev");
+  }
+  /*
+   * TODO need to add more semantic meaning, atm its' hard to read
+  */
+  _insert(index, value, dir, opposite) {
+    const target = this._find(index);
+    if (!target) {
+      return false;
+    }
+    const adjacent = target[dir];
+    const node = new Node(value);
+    node[ opposite ] = target;
+    node[ dir ] = adjacent;
+    target[ dir ] = node;
+    adjacent[ opposite ] = node;
+    this.size++;
+    return true;
+  }
+
+  get(index) {
+    const target = this._find(index);
+    return target ? target.value : target;
+  }
+  /*
+   * TODO need refactoring
+  */
+  _find(index) {
     if (index < -1 || index > this.size - 1) {
       return undefined;
     }
-    if (!index || index == this.size - 1) {
-      return index ? this.tail.value : this.head.value;
-    }
-    // starting index 1 -->
-    const fromHead = index; // 1 --> 1 > 2
-    const fromTail = this.size - index - 1; // 18 --<
-    let i = 0, target; //
+    const fromHead = index;
+    const fromTail = this.size - index - 1;
+    let i = 0, target;
     if (fromHead > fromTail) {
       target = this.tail;
       while (i++ < fromTail) {
@@ -154,9 +191,28 @@ class LinkedList {
         target = target.next;
       }
     }
-    return flag ? target : target.value;
+    return target;
   }
 
+  /*
+   * TODO need to experiment with implementing pre stored data -->
+   * compare pros and cons (prestore introduce overhead)
+  */
+  toString() {
+    const len = this.size;
+    let string = "";
+    let target = this.head;
+    for (let i = 0; i < len; i++) {
+      string += ", " + target.value;
+      target = target.next;
+    }
+    return string.substring(2);
+  }
+
+  /*
+  * TODO implement iterable interface, instead of custom method
+  * need to look into implementation of iterator
+  */
   toArray() {
     const array = new Array(this.size);
     let head = this.head;
@@ -171,6 +227,11 @@ class LinkedList {
     return array;
   }
 }
+
+
+
+
+
 
 function benchmark(method) {
   return collection => {
